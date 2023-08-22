@@ -116,8 +116,7 @@ void GridMap::initMap(ros::NodeHandle &nh)
   }
 
   // use odometry and point cloud
-  indep_cloud_sub_ =
-      node_.subscribe<sensor_msgs::PointCloud2>("/grid_map/cloud", 10, &GridMap::cloudCallback, this);
+  indep_cloud_sub_ = node_.subscribe<sensor_msgs::PointCloud>("/grid_map/cloud", 10, &GridMap::cloudCallback, this);
   indep_odom_sub_ =
       node_.subscribe<nav_msgs::Odometry>("/grid_map/odom", 10, &GridMap::odomCallback, this);
 
@@ -727,11 +726,13 @@ void GridMap::odomCallback(const nav_msgs::OdometryConstPtr &odom)
   md_.has_odom_ = true;
 }
 
-void GridMap::cloudCallback(const sensor_msgs::PointCloud2ConstPtr &img)
+void GridMap::cloudCallback(const sensor_msgs::PointCloudConstPtr &img1)
 {
+  sensor_msgs::PointCloud2 img2;
+  sensor_msgs::convertPointCloudToPointCloud2(*img1, img2);
 
   pcl::PointCloud<pcl::PointXYZ> latest_cloud;
-  pcl::fromROSMsg(*img, latest_cloud);
+  pcl::fromROSMsg(img2, latest_cloud);
 
   md_.has_cloud_ = true;
 

@@ -24,6 +24,8 @@
 
 #include <plan_env/raycast.h>
 
+#include <sensor_msgs/point_cloud_conversion.h>
+
 #define logit(x) (log((x) / (1 - (x))))
 
 using namespace std;
@@ -189,7 +191,7 @@ private:
   void depthPoseCallback(const sensor_msgs::ImageConstPtr& img,
                          const geometry_msgs::PoseStampedConstPtr& pose);
   void depthOdomCallback(const sensor_msgs::ImageConstPtr& img, const nav_msgs::OdometryConstPtr& odom);
-  void cloudCallback(const sensor_msgs::PointCloud2ConstPtr& img);
+  void cloudCallback(const sensor_msgs::PointCloudConstPtr& img1);
   void odomCallback(const nav_msgs::OdometryConstPtr& odom);
 
   // update occupancy by raycasting
