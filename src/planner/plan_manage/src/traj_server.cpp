@@ -6,6 +6,14 @@
 #include "visualization_msgs/Marker.h"
 #include <ros/ros.h>
 
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <netinet/in.h>
+#include <netinet/udp.h>
+#include <arpa/inet.h>
+
 ros::Publisher pos_cmd_pub;
 
 quadrotor_msgs::PositionCommand cmd;
@@ -23,6 +31,9 @@ int traj_id_;
 // yaw control
 double last_yaw_, last_yaw_dot_;
 double time_forward_;
+
+struct sockaddr_in ipc_addr;
+static int ipc_sock;
 
 void bsplineCallback(ego_planner::BsplineConstPtr msg)
 {
@@ -217,6 +228,9 @@ void cmdCallback(const ros::TimerEvent &e)
   cmd.velocity.y = vel(1);
   cmd.velocity.z = vel(2);
 
+  float ipc_msg[3] = { float(vel(0)), float(vel(1)), float(vel(2)) };
+  sendto(ipc_sock, ipc_msg, sizeof(ipc_msg), 0, (struct sockaddr*)&ipc_addr, sizeof(ipc_addr));
+
   cmd.acceleration.x = acc(0);
   cmd.acceleration.y = acc(1);
   cmd.acceleration.z = acc(2);
@@ -231,6 +245,12 @@ void cmdCallback(const ros::TimerEvent &e)
 
 int main(int argc, char **argv)
 {
+  memset(&ipc_addr, 0, sizeof(ipc_addr));
+  ipc_addr.sin_family = AF_INET;
+  ipc_addr.sin_port = htons(17500);
+  ipc_addr.sin_addr.s_addr = inet_addr("192.168.0.58");
+  ipc_sock = socket(AF_INET, SOCK_DGRAM, 0);
+
   ros::init(argc, argv, "traj_server");
   ros::NodeHandle node;
   ros::NodeHandle nh("~");
@@ -239,7 +259,7 @@ int main(int argc, char **argv)
 
   pos_cmd_pub = node.advertise<quadrotor_msgs::PositionCommand>("/position_cmd", 50);
 
-  ros::Timer cmd_timer = node.createTimer(ros::Duration(0.01), cmdCallback);
+  ros::Timer cmd_timer = node.createTimer(ros::Duration(0.1), cmdCallback);
 
   /* control parameter */
   cmd.kx[0] = pos_gain[0];
