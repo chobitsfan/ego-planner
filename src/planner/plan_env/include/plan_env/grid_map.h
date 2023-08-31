@@ -25,6 +25,8 @@
 #include <plan_env/raycast.h>
 
 #include <sensor_msgs/point_cloud_conversion.h>
+#include <tf/transform_listener.h>
+#include <pcl_ros/transforms.h>
 
 #define logit(x) (log((x) / (1 - (x))))
 
@@ -194,6 +196,8 @@ private:
   void cloudCallback(const sensor_msgs::PointCloudConstPtr& img1);
   void odomCallback(const nav_msgs::OdometryConstPtr& odom);
 
+  void tofCloudCallback(const sensor_msgs::PointCloudConstPtr& img1);
+
   // update occupancy by raycasting
   void updateOccupancyCallback(const ros::TimerEvent& /*event*/);
   void visCallback(const ros::TimerEvent& /*event*/);
@@ -225,7 +229,7 @@ private:
   SynchronizerImagePose sync_image_pose_;
   SynchronizerImageOdom sync_image_odom_;
 
-  ros::Subscriber indep_cloud_sub_, indep_odom_sub_;
+  ros::Subscriber indep_cloud_sub_, indep_odom_sub_, tof_cloud_sub_;
   ros::Publisher map_pub_, map_inf_pub_;
   ros::Publisher unknown_pub_;
   ros::Timer occ_timer_, vis_timer_;
@@ -234,6 +238,9 @@ private:
   uniform_real_distribution<double> rand_noise_;
   normal_distribution<double> rand_noise2_;
   default_random_engine eng_;
+
+  tf::TransformListener tf_listener;
+  pcl::PointCloud<pcl::PointXYZ> tof_cloud;
 };
 
 /* ============================== definition of inline function

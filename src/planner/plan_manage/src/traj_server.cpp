@@ -259,7 +259,7 @@ int main(int argc, char **argv)
 
   pos_cmd_pub = node.advertise<quadrotor_msgs::PositionCommand>("/position_cmd", 50);
 
-  ros::Timer cmd_timer = node.createTimer(ros::Duration(0.1), cmdCallback);
+  ros::Timer cmd_timer = node.createTimer(ros::Duration(0.05), cmdCallback);
 
   /* control parameter */
   cmd.kx[0] = pos_gain[0];

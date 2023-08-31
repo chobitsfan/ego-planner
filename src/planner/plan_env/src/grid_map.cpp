@@ -119,6 +119,8 @@ void GridMap::initMap(ros::NodeHandle &nh)
   indep_cloud_sub_ = node_.subscribe<sensor_msgs::PointCloud>("/grid_map/cloud", 10, &GridMap::cloudCallback, this);
   indep_odom_sub_ =
       node_.subscribe<nav_msgs::Odometry>("/grid_map/odom", 10, &GridMap::odomCallback, this);
+  
+  tof_cloud_sub_ = node_.subscribe<sensor_msgs::PointCloud>("/tof/point_cloud", 10, &GridMap::tofCloudCallback, this);
 
   occ_timer_ = node_.createTimer(ros::Duration(0.05), &GridMap::updateOccupancyCallback, this);
   vis_timer_ = node_.createTimer(ros::Duration(0.05), &GridMap::visCallback, this);
@@ -726,6 +728,16 @@ void GridMap::odomCallback(const nav_msgs::OdometryConstPtr &odom)
   md_.has_odom_ = true;
 }
 
+void GridMap::tofCloudCallback(const sensor_msgs::PointCloudConstPtr &img1) {
+  sensor_msgs::PointCloud2 img2;
+  sensor_msgs::convertPointCloudToPointCloud2(*img1, img2);
+  pcl::PointCloud<pcl::PointXYZ> tmp_cloud;
+  pcl::fromROSMsg(img2, tmp_cloud);
+  tf::StampedTransform transform;
+  tf_listener.lookupTransform("world", "body", ros::Time(0), transform);
+  pcl_ros::transformPointCloud(tmp_cloud, tof_cloud, transform);
+}
+
 void GridMap::cloudCallback(const sensor_msgs::PointCloudConstPtr &img1)
 {
   sensor_msgs::PointCloud2 img2;
@@ -733,6 +745,8 @@ void GridMap::cloudCallback(const sensor_msgs::PointCloudConstPtr &img1)
 
   pcl::PointCloud<pcl::PointXYZ> latest_cloud;
   pcl::fromROSMsg(img2, latest_cloud);
+
+  latest_cloud += tof_cloud;
 
   md_.has_cloud_ = true;
 
