@@ -108,7 +108,7 @@ void GridMap::initMap(ros::NodeHandle &nh)
   }
   else if (mp_.pose_type_ == ODOMETRY)
   {
-    odom_sub_.reset(new message_filters::Subscriber<nav_msgs::Odometry>(node_, "/grid_map/odom", 100));
+    odom_sub_.reset(new message_filters::Subscriber<nav_msgs::Odometry>(node_, "/grid_map/odom", 100, ros::TransportHints().udp()));
 
     sync_image_odom_.reset(new message_filters::Synchronizer<SyncPolicyImageOdom>(
         SyncPolicyImageOdom(100), *depth_sub_, *odom_sub_));
@@ -116,11 +116,11 @@ void GridMap::initMap(ros::NodeHandle &nh)
   }
 
   // use odometry and point cloud
-  indep_cloud_sub_ = node_.subscribe<sensor_msgs::PointCloud>("/grid_map/cloud", 10, &GridMap::cloudCallback, this);
+  indep_cloud_sub_ = node_.subscribe<sensor_msgs::PointCloud>("/grid_map/cloud", 10, &GridMap::cloudCallback, this, ros::TransportHints().udp());
   indep_odom_sub_ =
-      node_.subscribe<nav_msgs::Odometry>("/grid_map/odom", 10, &GridMap::odomCallback, this);
+      node_.subscribe<nav_msgs::Odometry>("/grid_map/odom", 10, &GridMap::odomCallback, this, ros::TransportHints().udp());
   
-  tof_cloud_sub_ = node_.subscribe<sensor_msgs::PointCloud>("/tof/point_cloud", 10, &GridMap::tofCloudCallback, this);
+  tof_cloud_sub_ = node_.subscribe<sensor_msgs::PointCloud>("/tof/point_cloud", 10, &GridMap::tofCloudCallback, this, ros::TransportHints().udp());
 
   occ_timer_ = node_.createTimer(ros::Duration(0.05), &GridMap::updateOccupancyCallback, this);
   vis_timer_ = node_.createTimer(ros::Duration(0.05), &GridMap::visCallback, this);
