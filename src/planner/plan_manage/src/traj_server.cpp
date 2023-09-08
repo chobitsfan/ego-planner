@@ -239,7 +239,7 @@ void cmdCallback(const ros::TimerEvent &e)
 
   pos_cmd_pub.publish(cmd);
 
-  float ipc_msg[] = { float(vel(0)), float(vel(1)), float(vel(2)),  float(acc(0)), float(acc(1)), float(acc(2))};
+  float ipc_msg[] = { float(pos(0)), float(pos(1)), float(pos(2)), float(vel(0)), float(vel(1)), float(vel(2)),  float(acc(0)), float(acc(1)), float(acc(2))};
   sendto(ipc_sock, ipc_msg, sizeof(ipc_msg), 0, (struct sockaddr*)&ipc_addr, sizeof(ipc_addr));
 }
 
