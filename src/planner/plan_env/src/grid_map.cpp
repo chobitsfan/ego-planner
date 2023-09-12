@@ -104,7 +104,7 @@ void GridMap::initMap(ros::NodeHandle &nh)
 
     sync_image_pose_.reset(new message_filters::Synchronizer<SyncPolicyImagePose>(
         SyncPolicyImagePose(100), *depth_sub_, *pose_sub_));
-    sync_image_pose_->registerCallback(boost::bind(&GridMap::depthPoseCallback, this, _1, _2));
+    sync_image_pose_->registerCallback(boost::bind(&GridMap::depthPoseCallback, this, boost::placeholders::_1, boost::placeholders::_2));
   }
   else if (mp_.pose_type_ == ODOMETRY)
   {
@@ -112,18 +112,18 @@ void GridMap::initMap(ros::NodeHandle &nh)
 
     sync_image_odom_.reset(new message_filters::Synchronizer<SyncPolicyImageOdom>(
         SyncPolicyImageOdom(100), *depth_sub_, *odom_sub_));
-    sync_image_odom_->registerCallback(boost::bind(&GridMap::depthOdomCallback, this, _1, _2));
+    sync_image_odom_->registerCallback(boost::bind(&GridMap::depthOdomCallback, this, boost::placeholders::_1, boost::placeholders::_2));
   }
 
   // use odometry and point cloud
   indep_cloud_sub_ = node_.subscribe<pcl::PointCloud<pcl::PointXYZ>>("/grid_map/cloud", 10, &GridMap::cloudCallback, this, ros::TransportHints().udp());
   indep_odom_sub_ =
       node_.subscribe<nav_msgs::Odometry>("/grid_map/odom", 10, &GridMap::odomCallback, this, ros::TransportHints().udp());
-  
+
   tof_cloud_sub_ = node_.subscribe<pcl::PointCloud<pcl::PointXYZ>>("/tof/point_cloud", 10, &GridMap::tofCloudCallback, this, ros::TransportHints().udp());
 
   occ_timer_ = node_.createTimer(ros::Duration(0.05), &GridMap::updateOccupancyCallback, this);
-  vis_timer_ = node_.createTimer(ros::Duration(0.05), &GridMap::visCallback, this);
+  vis_timer_ = node_.createTimer(ros::Duration(0.2), &GridMap::visCallback, this);
 
   map_pub_ = node_.advertise<sensor_msgs::PointCloud2>("/grid_map/occupancy", 10);
   map_inf_pub_ = node_.advertise<sensor_msgs::PointCloud2>("/grid_map/occupancy_inflate", 10);
@@ -728,14 +728,14 @@ void GridMap::odomCallback(const nav_msgs::OdometryConstPtr &odom)
   md_.has_odom_ = true;
 }
 
-void GridMap::tofCloudCallback(const pcl::PointCloud<pcl::PointXYZ>::ConstPtr &img1) {
+void GridMap::tofCloudCallback(const boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ> const>& img1) {
   tf::StampedTransform transform;
   tf_listener.lookupTransform("world", "body", ros::Time(0), transform);
   pcl_ros::transformPointCloud(*img1, tof_cloud, transform);
 }
 
-void GridMap::cloudCallback(const pcl::PointCloud<pcl::PointXYZ>::ConstPtr &latest_cloud)
-{ 
+void GridMap::cloudCallback(const boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ> const>& latest_cloud)
+{
   md_.has_cloud_ = true;
 
   if (!md_.has_odom_)

@@ -194,10 +194,10 @@ private:
   void depthPoseCallback(const sensor_msgs::ImageConstPtr& img,
                          const geometry_msgs::PoseStampedConstPtr& pose);
   void depthOdomCallback(const sensor_msgs::ImageConstPtr& img, const nav_msgs::OdometryConstPtr& odom);
-  void cloudCallback(const pcl::PointCloud<pcl::PointXYZ>::ConstPtr& img1);
+  void cloudCallback(const boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ> const>& img1);
   void odomCallback(const nav_msgs::OdometryConstPtr& odom);
 
-  void tofCloudCallback(const pcl::PointCloud<pcl::PointXYZ>::ConstPtr& img1);
+  void tofCloudCallback(const boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ> const>& img1);
 
   // update occupancy by raycasting
   void updateOccupancyCallback(const ros::TimerEvent& /*event*/);
