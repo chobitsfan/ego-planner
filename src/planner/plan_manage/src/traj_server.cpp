@@ -1,7 +1,6 @@
 #include "bspline_opt/uniform_bspline.h"
 #include "nav_msgs/Odometry.h"
 #include "ego_planner/Bspline.h"
-#include "quadrotor_msgs/PositionCommand.h"
 #include "std_msgs/Empty.h"
 #include "visualization_msgs/Marker.h"
 #include <ros/ros.h>
@@ -16,10 +15,6 @@
 
 ros::Publisher pos_cmd_pub;
 
-quadrotor_msgs::PositionCommand cmd;
-double pos_gain[3] = {0, 0, 0};
-double vel_gain[3] = {0, 0, 0};
-
 using ego_planner::UniformBspline;
 
 bool receive_traj_ = false;
@@ -28,8 +23,6 @@ double traj_duration_;
 ros::Time start_time_;
 int traj_id_;
 
-// yaw control
-double last_yaw_, last_yaw_dot_;
 double time_forward_;
 
 struct sockaddr_in ipc_addr;
@@ -78,7 +71,7 @@ void bsplineCallback(ego_planner::BsplineConstPtr msg)
 
   receive_traj_ = true;
 }
-
+#if 0
 std::pair<double, double> calculate_yaw(double t_cur, Eigen::Vector3d &pos, ros::Time &time_now, ros::Time &time_last)
 {
   constexpr double PI = 3.1415926;
@@ -170,7 +163,7 @@ std::pair<double, double> calculate_yaw(double t_cur, Eigen::Vector3d &pos, ros:
 
   return yaw_yawdot;
 }
-
+#endif
 void cmdCallback(const ros::TimerEvent &e)
 {
   /* no publishing before receive traj_ */
@@ -190,10 +183,6 @@ void cmdCallback(const ros::TimerEvent &e)
     vel = traj_[1].evaluateDeBoorT(t_cur);
     acc = traj_[2].evaluateDeBoorT(t_cur);
 
-    /*** calculate yaw ***/
-    yaw_yawdot = calculate_yaw(t_cur, pos, time_now, time_last);
-    /*** calculate yaw ***/
-
     double tf = min(traj_duration_, t_cur + 2.0);
     pos_f = traj_[0].evaluateDeBoorT(tf);
   }
@@ -204,9 +193,6 @@ void cmdCallback(const ros::TimerEvent &e)
     vel.setZero();
     acc.setZero();
 
-    yaw_yawdot.first = last_yaw_;
-    yaw_yawdot.second = 0;
-
     pos_f = pos;
   }
   else
@@ -214,30 +200,6 @@ void cmdCallback(const ros::TimerEvent &e)
     cout << "[Traj server]: invalid time." << endl;
   }
   time_last = time_now;
-
-  cmd.header.stamp = time_now;
-  cmd.header.frame_id = "world";
-  cmd.trajectory_flag = quadrotor_msgs::PositionCommand::TRAJECTORY_STATUS_READY;
-  cmd.trajectory_id = traj_id_;
-
-  cmd.position.x = pos(0);
-  cmd.position.y = pos(1);
-  cmd.position.z = pos(2);
-
-  cmd.velocity.x = vel(0);
-  cmd.velocity.y = vel(1);
-  cmd.velocity.z = vel(2);
-
-  cmd.acceleration.x = acc(0);
-  cmd.acceleration.y = acc(1);
-  cmd.acceleration.z = acc(2);
-
-  cmd.yaw = yaw_yawdot.first;
-  cmd.yaw_dot = yaw_yawdot.second;
-
-  last_yaw_ = cmd.yaw;
-
-  pos_cmd_pub.publish(cmd);
 
   float ipc_msg[] = { float(pos(0)), float(pos(1)), float(pos(2)), float(vel(0)), float(vel(1)), float(vel(2)),  float(acc(0)), float(acc(1)), float(acc(2))};
   sendto(ipc_sock, ipc_msg, sizeof(ipc_msg), 0, (struct sockaddr*)&ipc_addr, sizeof(ipc_addr));
@@ -257,22 +219,9 @@ int main(int argc, char **argv)
 
   ros::Subscriber bspline_sub = node.subscribe("planning/bspline", 10, bsplineCallback);
 
-  pos_cmd_pub = node.advertise<quadrotor_msgs::PositionCommand>("/position_cmd", 50);
-
-  ros::Timer cmd_timer = node.createTimer(ros::Duration(0.05), cmdCallback);
-
-  /* control parameter */
-  cmd.kx[0] = pos_gain[0];
-  cmd.kx[1] = pos_gain[1];
-  cmd.kx[2] = pos_gain[2];
-
-  cmd.kv[0] = vel_gain[0];
-  cmd.kv[1] = vel_gain[1];
-  cmd.kv[2] = vel_gain[2];
+  ros::Timer cmd_timer = node.createTimer(ros::Duration(0.1), cmdCallback);
 
   nh.param("traj_server/time_forward", time_forward_, -1.0);
-  last_yaw_ = 0.0;
-  last_yaw_dot_ = 0.0;
 
   ros::Duration(1.0).sleep();
 
