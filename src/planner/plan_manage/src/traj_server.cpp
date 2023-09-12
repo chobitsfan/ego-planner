@@ -219,7 +219,7 @@ int main(int argc, char **argv)
 
   ros::Subscriber bspline_sub = node.subscribe("planning/bspline", 10, bsplineCallback);
 
-  ros::Timer cmd_timer = node.createTimer(ros::Duration(0.1), cmdCallback);
+  ros::Timer cmd_timer = node.createTimer(ros::Duration(0.05), cmdCallback);
 
   nh.param("traj_server/time_forward", time_forward_, -1.0);
 
