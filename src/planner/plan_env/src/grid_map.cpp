@@ -753,7 +753,6 @@ void GridMap::cloudCallback(const boost::shared_ptr<pcl::PointCloud<pcl::PointXY
   this->resetBuffer(md_.camera_pos_ - mp_.local_update_range_,
                     md_.camera_pos_ + mp_.local_update_range_);
 
-  pcl::PointXYZ pt;
   Eigen::Vector3d p3d, p3d_inf;
 
   int inf_step = ceil(mp_.obstacles_inflation_ / mp_.resolution_);
@@ -769,9 +768,9 @@ void GridMap::cloudCallback(const boost::shared_ptr<pcl::PointCloud<pcl::PointXY
   max_y = mp_.map_min_boundary_(1);
   max_z = mp_.map_min_boundary_(2);
 
-  for (size_t i = 0; i < latest_cloud->points.size(); ++i)
+  for (auto pt : latest_cloud->points)
   {
-    pt = latest_cloud->points[i];
+    if (pt.x == 0 && pt.y == 0 && pt.z == 0) break;
     p3d(0) = pt.x, p3d(1) = pt.y, p3d(2) = pt.z;
 
     /* point inside update range */
