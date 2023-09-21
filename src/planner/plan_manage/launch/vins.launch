@@ -1,4 +1,6 @@
 <launch>
+  <env name="ROSCONSOLE_CONFIG_FILE" value="$(find ego_planner)/launch/custom_rosconsole.conf"/>
+
   <!-- size of map, change the size inflate x, y, z according to your application -->
   <arg name="map_size_x" value="15.0"/>
   <arg name="map_size_y" value="15.0"/>
