@@ -12,6 +12,10 @@
 #include <netinet/in.h>
 #include <netinet/udp.h>
 #include <arpa/inet.h>
+#include <sys/un.h>
+
+#define SERVER_PATH "/tmp/chobits_server2"
+#define SOCK_PATH "/tmp/chobits_1236"
 
 ros::Publisher pos_cmd_pub;
 
@@ -25,7 +29,7 @@ int traj_id_;
 
 double time_forward_;
 
-struct sockaddr_in ipc_addr;
+struct sockaddr_un chobits_addr, chobits_local_addr;
 static int ipc_sock;
 
 void bsplineCallback(ego_planner::BsplineConstPtr msg)
@@ -202,16 +206,20 @@ void cmdCallback(const ros::TimerEvent &e)
   time_last = time_now;
 
   float ipc_msg[] = { float(pos(0)), float(pos(1)), float(pos(2)), float(vel(0)), float(vel(1)), float(vel(2)),  float(acc(0)), float(acc(1)), float(acc(2))};
-  sendto(ipc_sock, ipc_msg, sizeof(ipc_msg), 0, (struct sockaddr*)&ipc_addr, sizeof(ipc_addr));
+  sendto(ipc_sock, ipc_msg, sizeof(ipc_msg), 0, (struct sockaddr*)&chobits_addr, sizeof(chobits_addr));
 }
 
 int main(int argc, char **argv)
 {
-  memset(&ipc_addr, 0, sizeof(ipc_addr));
-  ipc_addr.sin_family = AF_INET;
-  ipc_addr.sin_port = htons(17500);
-  ipc_addr.sin_addr.s_addr = inet_addr("192.168.0.58");
-  ipc_sock = socket(AF_INET, SOCK_DGRAM, 0);
+  memset(&chobits_addr, 0, sizeof(struct sockaddr_un));
+  chobits_addr.sun_family = AF_UNIX;
+  strcpy(chobits_addr.sun_path, SERVER_PATH);
+  memset(&chobits_local_addr, 0, sizeof(struct sockaddr_un));
+  chobits_local_addr.sun_family = AF_UNIX;
+  strcpy(chobits_local_addr.sun_path, SOCK_PATH);
+  unlink(SOCK_PATH);
+  bind(ipc_sock, (struct sockaddr*)&chobits_local_addr, sizeof(chobits_local_addr));
+  ipc_sock = socket(AF_UNIX, SOCK_DGRAM, 0);
 
   ros::init(argc, argv, "traj_server");
   ros::NodeHandle node;
