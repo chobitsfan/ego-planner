@@ -1,0 +1,15 @@
+[Unit]
+Description=ego planner
+Wants=multi-user.target
+After=multi-user.target vins-mono.service
+
+[Service]
+Type=simple 
+ExecStart=/bin/bash -c 'source /home/pi/src/ego-planner/devel/setup.bash && exec roslaunch ego_planner vins.launch'
+KillSignal=SIGINT
+User=pi
+WorkingDirectory=/home/pi/
+ExecStartPre=/bin/sleep 5
+
+[Install]
+WantedBy=multi-user.target
