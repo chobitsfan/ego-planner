@@ -108,7 +108,7 @@ void GridMap::initMap(ros::NodeHandle &nh)
   }
   else if (mp_.pose_type_ == ODOMETRY)
   {
-    odom_sub_.reset(new message_filters::Subscriber<nav_msgs::Odometry>(node_, "/grid_map/odom", 100, ros::TransportHints().udp()));
+    odom_sub_.reset(new message_filters::Subscriber<nav_msgs::Odometry>(node_, "/grid_map/odom", 100, ros::TransportHints().tcpNoDelay()));
 
     sync_image_odom_.reset(new message_filters::Synchronizer<SyncPolicyImageOdom>(
         SyncPolicyImageOdom(100), *depth_sub_, *odom_sub_));
@@ -116,11 +116,8 @@ void GridMap::initMap(ros::NodeHandle &nh)
   }
 
   // use odometry and point cloud
-  indep_cloud_sub_ = node_.subscribe<pcl::PointCloud<pcl::PointXYZ>>("/grid_map/cloud", 10, &GridMap::cloudCallback, this, ros::TransportHints().udp());
-  indep_odom_sub_ =
-      node_.subscribe<nav_msgs::Odometry>("/grid_map/odom", 10, &GridMap::odomCallback, this, ros::TransportHints().udp());
-
-  tof_cloud_sub_ = node_.subscribe<pcl::PointCloud<pcl::PointXYZ>>("/tof/point_cloud", 10, &GridMap::tofCloudCallback, this, ros::TransportHints().udp());
+  //indep_cloud_sub_ = node_.subscribe<pcl::PointCloud<pcl::PointXYZ>>("/grid_map/cloud", 10, &GridMap::cloudCallback, this, ros::TransportHints().udp());
+  //indep_odom_sub_ = node_.subscribe<nav_msgs::Odometry>("/grid_map/odom", 10, &GridMap::odomCallback, this, ros::TransportHints().udp());
 
   occ_timer_ = node_.createTimer(ros::Duration(0.05), &GridMap::updateOccupancyCallback, this);
   vis_timer_ = node_.createTimer(ros::Duration(0.2), &GridMap::visCallback, this);
@@ -728,12 +725,7 @@ void GridMap::odomCallback(const nav_msgs::OdometryConstPtr &odom)
   md_.has_odom_ = true;
 }
 
-void GridMap::tofCloudCallback(const boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ> const>& img1) {
-  tf::StampedTransform transform;
-  tf_listener.lookupTransform("world", "body", ros::Time(0), transform);
-  pcl_ros::transformPointCloud(*img1, tof_cloud, transform);
-}
-
+#if 0
 void GridMap::cloudCallback(const boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ> const>& latest_cloud)
 {
   md_.has_cloud_ = true;
@@ -827,6 +819,7 @@ void GridMap::cloudCallback(const boost::shared_ptr<pcl::PointCloud<pcl::PointXY
   boundIndex(md_.local_bound_min_);
   boundIndex(md_.local_bound_max_);
 }
+#endif
 
 void GridMap::publishMap()
 {
@@ -1012,7 +1005,16 @@ void GridMap::depthOdomCallback(const sensor_msgs::ImageConstPtr &img,
   }
   cv_ptr->image.copyTo(md_.depth_image_);
 
-  md_.occ_need_update_ = true;
+  if (isInMap(md_.camera_pos_))
+  {
+    md_.has_odom_ = true;
+    md_.update_num_ += 1;
+    md_.occ_need_update_ = true;
+  }
+  else
+  {
+    md_.occ_need_update_ = false;
+  }
 }
 
 // GridMap

@@ -94,7 +94,7 @@ namespace ego_planner
     /* ROS functions */
     void execFSMCallback(const ros::TimerEvent &e);
     void checkCollisionCallback(const ros::TimerEvent &e);
-    void waypointCallback(const nav_msgs::PathConstPtr &msg);
+    void waypointCallback(const geometry_msgs::PoseStampedPtr &msg);
     void odometryCallback(const nav_msgs::OdometryConstPtr &msg);
 
     bool checkCollision();
