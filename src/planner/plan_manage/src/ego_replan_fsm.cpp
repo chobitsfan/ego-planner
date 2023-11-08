@@ -116,7 +116,7 @@ namespace ego_planner
     init_pt_ = odom_pos_;
 
     bool success = false;
-    end_pt_ << msg->pose.position.x, msg->pose.position.y, 1.0;
+    end_pt_ << msg->pose.position.x, msg->pose.position.y,  msg->pose.position.z;
     success = planner_manager_->planGlobalTraj(odom_pos_, odom_vel_, Eigen::Vector3d::Zero(), end_pt_, Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero());
 
     visualization_->displayGoalPoint(end_pt_, Eigen::Vector4d(0, 0.5, 0.5, 1), 0.3, 0);
@@ -163,6 +163,9 @@ namespace ego_planner
     odom_vel_(2) = msg->twist.twist.linear.z;
 
     //odom_acc_ = estimateAcc( msg );
+    odom_acc_(0) = msg->twist.twist.angular.x;
+    odom_acc_(1) = msg->twist.twist.angular.y;
+    odom_acc_(2) = msg->twist.twist.angular.z;
 
     odom_orient_.w() = msg->pose.pose.orientation.w;
     odom_orient_.x() = msg->pose.pose.orientation.x;
@@ -345,15 +348,18 @@ namespace ego_planner
   bool EGOReplanFSM::planFromCurrentTraj()
   {
 
-    LocalTrajData *info = &planner_manager_->local_data_;
-    ros::Time time_now = ros::Time::now();
-    double t_cur = (time_now - info->start_time_).toSec();
+    //LocalTrajData *info = &planner_manager_->local_data_;
+    //ros::Time time_now = ros::Time::now();
+    //double t_cur = (time_now - info->start_time_).toSec();
 
     //cout << "info->velocity_traj_=" << info->velocity_traj_.get_control_points() << endl;
 
-    start_pt_ = info->position_traj_.evaluateDeBoorT(t_cur);
-    start_vel_ = info->velocity_traj_.evaluateDeBoorT(t_cur);
-    start_acc_ = info->acceleration_traj_.evaluateDeBoorT(t_cur);
+    //start_pt_ = info->position_traj_.evaluateDeBoorT(t_cur);
+    //start_vel_ = info->velocity_traj_.evaluateDeBoorT(t_cur);
+    //start_acc_ = info->acceleration_traj_.evaluateDeBoorT(t_cur);
+    start_pt_ = odom_pos_;
+    start_vel_ = odom_vel_;
+    start_acc_ = odom_acc_;
 
     bool success = callReboundReplan(false, false);
 
